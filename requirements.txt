@@ -1,0 +1,7 @@
+torch>=1.4.1
+torchvision>=0.5.0
+numpy>=1.16.0
+opencv-python>=4.5.1
+pillow>=0.7.1
+tensorboard>=2.2.2
+scikit-image>=0.17.1
