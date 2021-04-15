@@ -3,3 +3,5 @@ logs/
 datasets/*
 !datasets/samples
 ckpt/
+.git/
+.idea/
