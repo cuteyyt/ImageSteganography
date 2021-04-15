@@ -7,7 +7,7 @@ from PIL import Image
 import torchvision.transforms as transforms
 
 from networks.HidDeN import Encoder, Decoder, Noiser
-from utils.utils import exec_val
+from utils.utils import exec_val, save_noise
 from utils.metric import cal_single_psnr
 
 
@@ -60,12 +60,13 @@ def encode_decode(args, logger_name):
         noiser.load_state_dict(noiser_param)
     decoder.load_state_dict(dec_param)
 
-    os.makedirs(args.result_dir, exist_ok=True)
+    os.makedirs(os.path.join(args.result_dir, logger_name), exist_ok=True)
     files_list = os.listdir(args.sample_dir)
     metric = dict()
     for file in files_list:
         img_path = os.path.join(args.sample_dir, file)
-        dst_path = os.path.join(args.result_dir, file)
+        dst_path = os.path.join(args.result_dir, logger_name, file)
+        noise_path = os.path.join(args.result_dir, logger_name, 'noise_' + file)
         metric[file] = dict()
         print('Processing image {}'.format(img_path))
 
@@ -107,16 +108,28 @@ def encode_decode(args, logger_name):
         print("decoded_info:", decoded_rounded)
 
         exec_val(image, encoded_image, dst_path, resize_to=(image_height, image_width), mode='single')
+        if args.use_noise:
+            save_noise(noised_image, noise_path, resize_to=(image_height, image_width))
 
         encoded_image_ = cv2.imread(dst_path)
 
         metric[file]['err'] = round(bitwise_avg_err, 3)
         metric[file]['psnr'] = round(cal_single_psnr(ori_image, encoded_image_), 3)
 
+    ave_err = 0.0
+    ave_psnr = 0.0
+    count = 0
     for k, v in sorted(metric.items()):
+        ave_err += metric[k]['err']
+        ave_psnr += metric[k]['psnr']
+        count += 1
         print('{: <25}:{}'.format(k, v))
+    ave_err /= count
+    ave_psnr /= count
+    print("ave_err: {}".format(ave_err))
+    print("ave_psnr: {}".format(ave_psnr))
 
 
 if __name__ == '__main__':
     args = parse()
-    encode_decode(args, logger_name='train_21-04-09_13-06-53')
+    encode_decode(args, logger_name='train_21-04-09_13-07-01')

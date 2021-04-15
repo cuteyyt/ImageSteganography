@@ -1,5 +1,4 @@
 __pycache__/
 logs/
 datasets/*
-!dataset/samples
 ckpt/

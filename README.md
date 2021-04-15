@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The course project for "Network Security Theory and Practice(网络安全原理与实践)"
+Project for course *Network Security Theory and Practice(网络安全原理与实践)*.
 
 This repo follows [HiDDeN](https://github.com/ando-khachatryan/HiDDeN).
 
@@ -57,7 +57,7 @@ The data directory has the following structure:
 ```
 datasets/
     celeba_resize/
-    	train/
+        train/
             images/
                 train_image1.jpg
                 train_image2.jpg
@@ -137,38 +137,66 @@ Since the time left for our project is limited, I only conducted the following f
 | -------------- | --------------- | --------------- |
 | original       | 0               | 0               |
 | Rel loss       | 0               | 0               |
-| noise          | 0.2             | 0.003           |
-| Rel loss+noise | 0.162           | 0.003           |
+| noise          | 0.20            | 0.003           |
+| Rel loss+noise | 0.16            | 0.003           |
 
 `original:` trains the model using original loss function and without noises.
 
-`Rel loss:` trains the model using RelGAN's loss function and with noises.
+`Rel loss:` trains the model using RelGAN's loss function and without noises.
 
- `noise:` trains the model using origial loss function and without noises.
+ `noise:` trains the model using origial loss function and with noises.
 
-`Rel loss+noise`:
+`Rel loss+noise`: trains the model using RelGAN's loss function and with noises.
 
-`train_err_ratio:` the error ratio during training, using the train images and training info.
+`train_err_ratio:` the error ratio between decode info and original info during training.
 
-`test_err_ratio:`  the error ratio during testing, using the test images and random generate info.
+`test_err_ratio:`  the error ratio between decode info and original info during testing.
 
- `noises:`  the noises combination follows the original repo.
+`noises:`  the noises combination follows the original repo.
 
 `the noise layer parameters`
 
->  Noise Layer paremeters
+>Noise Layer paremeters
 >
 > - *Crop((height_min,height_max),(width_min,width_max))*, where ***(height_min,height_max)\*** is a range from which we draw a random number and keep that fraction of the height of the original image. ***(width_min,width_max)\*** controls the same for the width of the image. Put it another way, given an image with dimensions ***H x W,\*** the Crop() will randomly crop this into dimensions ***H' x W'\***, where ***H'/H\*** is in the range ***(height_min,height_max)\***, and ***W'/W\*** is in the range ***(width_min,width_max)\***. In the paper, the authors use a single parameter ***p\*** which shows the ratio ***(H' \* W')/ (H \* W)\***, i.e., which fraction of the are to keep. In our setting, you can obtain the appropriate ***p\*** by picking ***height_min\***, ***height_max\***  ***width_min\***, ***width_max\*** to be all equal to ***sqrt(p)\***
 > - *Cropout((height_min,height_max), (width_min,width_max))*, the parameters have the same meaning as in case of *Crop*.
 > - *Dropout(keep_min, keep_max)* : where the ratio of the pixels to keep from the watermarked image, ***keep_ratio\***, is drawn uniformly from the range ***(keep_min,keep_max)\***.
 > - *Resize(keep_min, keep_max)*, where the resize ratio is drawn uniformly from the range ***(keep_min, keep_max)\***. This ratio applies to both dimensions. For instance, of we have  Resize(0.7, 0.9), and we randomly draw the number 0.8 for a particular  image, then the resulting image will have the dimensions (H * 0.8, W *  0.8).
 > - *Jpeg* does not have any parameters.
-
-`the combined-noise`
-
+>
+> The Combined-noise
+>
 > **combined-noise** is the configuration  'crop((0.4,0.55),(0.4,0.55))+cropout((0.25,0.35),(0.25,0.35))+dropout(0.25,0.35)+resize(0.4,0.6)+jpeg()'. This is somewhat similar to combined noise configuation in the paper.
+- **Crop((0.4,0.55),(0.4,0.55))** means that the height and weight of the cropped image have the expected value of (0.4 + 0.55)/2 = 0.475. Therefore, the ratio of (epected) area of the Cropped image against the original image is 0.475x0.475 ≈ 0.22.
+- **Cropout((0.25,0.35),(0.25,0.35))** is similar to Crop(...), this translates to ratio of Cropped vs original image areas with p = 0.09.
+- **jpeg()** the same as the Jpeg layer from the paper. It is a differentiable approximation of Jpeg compression with the highest compression coefficient.
 
 I use the images in `datasets/samples` to see the final performance (calculate their PSNR and error ratio).
+| EXP_NAME       | avg_err_ratio | avg_psnr |
+| -------------- | ------------- | -------- |
+| original       | 0             | 22.71    |
+| Rel loss       | 0             | 22.79    |
+| noise          | 0.41          | 22.65    |
+| Rel loss+noise | 0.34          | 22.59    |
 
- `PSNR:` Peak Signal to Noise Ratio, which can measure the robustness of the model. The higher the PSNR value, the model is more steady to noises.
+`note:` Since the info is random generated, the metrics may be a slight different.
 
+`PSNR:` Peak Signal to Noise Ratio, which can measure the robustness of the model. The higher the PSNR value, the model is more steady to noises. It can be calculated by the following step:
+$$MSE=\frac{\sum_{M,N}[I_1(m,n)-I_2(m,n)]^2}{M\times N}(1)$$
+where, $M$ and $N$ is the number of rows and columns in the input image respectively. $I$ is the pixel value.
+$$PSNR = 10\times\log_{10}{\frac{R^2}{MSE}}(2)$$
+where $R$ is the fluctuation in the input image. For example, if the input image has a double-precision floating-point data type, then $R$ is 1. If it has an 8-bit unsigned integer data type, $R$ is 255.
+
+## Notes
+
+`logs/` : This directory contains the log files during the training and testing processes. The logger name is organised in the form "ACTION∈[train/test]+TIME". Each Logger records the detailed loss infomation and error ratio each iter and epoch.
+
+`ckpt/` : This directory contains the model files and test images. I split the *celebaA* dataset into train set(200000 images) and test set(2599 images). For each epoch in training, use two data samples (one fix, one random. Fix choose a fixed info and val set's first image; random choose a random info and a random image in val set) to val the performance. For each epoch in testing, use the whole val set to test the performance. models and test_images are stored each epoch. We can discover that:
+
+- encoded images which can fool the discriminator may can not fool human's eyes.
+
+`datasets/samples` : This directory contains 6 PNG images from Internet and 6 images from *celebaA* which has been converted from JPG to PNG through **opencv-python**. `encode_or_decode.py` is designed for these files to encode and decode a small number of images. The results are stored in `datasets/results`, which sub-directories are named by the model's logger file's name. We can observe that:
+
+- models perform better on train dataset than arbitary images.
+
+You can download these files from 
