@@ -198,5 +198,3 @@ where $R$ is the fluctuation in the input image. For example, if the input image
 `datasets/samples` : This directory contains 6 PNG images from Internet and 6 images from *celebaA* which has been converted from JPG to PNG through **opencv-python**. `encode_or_decode.py` is designed for these files to encode and decode a small number of images. The results are stored in `datasets/results`, which sub-directories are named by the model's logger file's name. We can observe that:
 
 - models perform better on train dataset than arbitary images.
-
-You can download these files from 
